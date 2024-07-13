@@ -231,103 +231,145 @@ export const getPropertyDetails = async (req, res) => {
   }
 };
 
+
+
 export const listProperties = async (req, res) => {
   const { userLatitude, userLongitude, filters } = req.body;
+
   try {
-    const query = {};
+    const exactQuery = {};
+    const similarQuery = {};
 
-    // Apply filters if they exist
+    // Apply filters for exact match query
     if (filters) {
-      // If the 'property_type' filter is provided, add it to the query
-      if (filters.property_type) query.property_type = filters.property_type;
-
-      // If the 'title' filter is provided, add a case-insensitive regex search to the query
-      if (filters.title) query.title = { $regex: filters.title, $options: "i" };
-
-      // If the 'description' filter is provided, add a case-insensitive regex search to the query
-      if (filters.description)
-        query.description = { $regex: filters.description, $options: "i" };
-
-      // If the 'address' filter is provided, add a case-insensitive regex search to the query
-      if (filters.address)
-        query.address = { $regex: filters.address, $options: "i" };
-
-      // If the 'pincode' filter is provided, add it to the query
-      if (filters.pincode) query.pincode = filters.pincode;
-
-      // If the 'building_name' filter is provided, add a case-insensitive regex search to the query
-      if (filters.building_name)
-        query.building_name = { $regex: filters.building_name, $options: "i" };
-
-      // If the 'bedrooms' filter is provided, add it to the query
-      if (filters.bedrooms) query.bedrooms = filters.bedrooms;
-
-      // If the 'bathrooms' filter is provided, add it to the query
-      if (filters.bathrooms) query.bathrooms = filters.bathrooms;
-
-      // If the 'area_sqft' filter is provided, add it to the query
-      if (filters.area_sqft) query.area_sqft = filters.area_sqft;
-
-      // If the 'property_age' filter is provided, add it to the query
-      if (filters.property_age) query.property_age = filters.property_age;
-
-      // If the 'facing' filter is provided, add it to the query
-      if (filters.facing) query.facing = filters.facing;
-
-      // If the 'floor_number' filter is provided, add it to the query
-      if (filters.floor_number) query.floor_number = filters.floor_number;
-
-      // If the 'total_floors' filter is provided, add it to the query
-      if (filters.total_floors) query.total_floors = filters.total_floors;
-
-      // If the 'furnish_type' filter is provided, add it to the query
-      if (filters.furnish_type) query.furnish_type = filters.furnish_type;
-
-      // If the 'available_from' filter is provided, add a date comparison to the query
-      if (filters.available_from)
-        query.available_from = { $gte: new Date(filters.available_from) };
-
-      // If the 'monthly_rent' filter is provided, add a less than or equal condition to the query
-      if (filters.monthly_rent)
-        query.monthly_rent = { $lte: filters.monthly_rent };
-
-      // If the 'security_deposit' filter is provided, add a less than or equal condition to the query
-      if (filters.security_deposit)
-        query.security_deposit = { $lte: filters.security_deposit };
-
-      // If the 'preferred_tenant' filter is provided, add it to the query
-      if (filters.preferred_tenant)
-        query.preferred_tenant = filters.preferred_tenant;
-
-      // If the 'localities' filter is provided, add an 'in' condition to the query
-      if (filters.localities) query.localities = { $in: filters.localities };
-
-      // If the 'landmark' filter is provided, add a case-insensitive regex search to the query
-      if (filters.landmark)
-        query.landmark = { $regex: filters.landmark, $options: "i" };
-
-      // If the 'facilities' filter is provided, add an 'in' condition to the query
-      if (filters.facilities) query.facilities = { $in: filters.facilities };
+      if (filters.property_type) {
+        exactQuery.property_type = filters.property_type;
+        similarQuery.property_type = filters.property_type;
+      }
+      if (filters.title) {
+        exactQuery.title = { $regex: filters.title, $options: "i" };
+        similarQuery.title = { $regex: filters.title, $options: "i" };
+      }
+      if (filters.description) {
+        exactQuery.description = { $regex: filters.description, $options: "i" };
+        similarQuery.description = { $regex: filters.description, $options: "i" };
+      }
+      if (filters.address) {
+        exactQuery.address = { $regex: filters.address, $options: "i" };
+        similarQuery.address = { $regex: filters.address, $options: "i" };
+      }
+      if (filters.pincode) {
+        exactQuery.pincode = filters.pincode;
+        similarQuery.pincode = filters.pincode;
+      }
+      if (filters.building_name) {
+        exactQuery.building_name = { $regex: filters.building_name, $options: "i" };
+        similarQuery.building_name = { $regex: filters.building_name, $options: "i" };
+      }
+      if (filters.bedrooms) {
+        exactQuery.bedrooms = filters.bedrooms;
+        similarQuery.bedrooms = { $gte: filters.bedrooms };
+      }
+      if (filters.bathrooms) {
+        exactQuery.bathrooms = filters.bathrooms;
+        similarQuery.bathrooms = { $gte: filters.bathrooms };
+      }
+      if (filters.area_sqft) {
+        exactQuery.area_sqft = filters.area_sqft;
+        similarQuery.area_sqft = { $gte: filters.area_sqft };
+      }
+      if (filters.property_age) {
+        exactQuery.property_age = filters.property_age;
+        similarQuery.property_age = { $gte: filters.property_age };
+      }
+      if (filters.facing) {
+        exactQuery.facing = filters.facing;
+        similarQuery.facing = filters.facing;
+      }
+      if (filters.floor_number) {
+        exactQuery.floor_number = filters.floor_number;
+        similarQuery.floor_number = { $gte: filters.floor_number };
+      }
+      if (filters.total_floors) {
+        exactQuery.total_floors = filters.total_floors;
+        similarQuery.total_floors = { $gte: filters.total_floors };
+      }
+      if (filters.furnish_type) {
+        exactQuery.furnish_type = filters.furnish_type;
+        similarQuery.furnish_type = filters.furnish_type;
+      }
+      if (filters.available_from) {
+        exactQuery.available_from = { $gte: new Date(filters.available_from) };
+        similarQuery.available_from = { $gte: new Date(filters.available_from) };
+      }
+      if (filters.monthly_rent) {
+        exactQuery.monthly_rent = { $lte: filters.monthly_rent };
+        similarQuery.monthly_rent = { $lte: filters.monthly_rent * 1.5 }; // Example adjustment for similar query
+      }
+      if (filters.security_deposit) {
+        exactQuery.security_deposit = { $lte: filters.security_deposit };
+        similarQuery.security_deposit = { $lte: filters.security_deposit * 1.5 }; // Example adjustment for similar query
+      }
+      if (filters.preferred_tenant) {
+        exactQuery.preferred_tenant = filters.preferred_tenant;
+        similarQuery.preferred_tenant = filters.preferred_tenant;
+      }
+      if (filters.localities && Array.isArray(filters.localities)) {
+        exactQuery.localities = { $in: filters.localities };
+        similarQuery.localities = { $in: filters.localities };
+      }
+      if (filters.landmark) {
+        exactQuery.landmark = { $regex: filters.landmark, $options: "i" };
+        similarQuery.landmark = { $regex: filters.landmark, $options: "i" };
+      }
+      if (filters.facilities && Array.isArray(filters.facilities)) {
+        exactQuery.facilities = { $in: filters.facilities };
+        similarQuery.facilities = { $in: filters.facilities };
+      }
     }
 
-    const properties = await Property.find(query);
+    // Fetch exact matches
+    const exactProperties = await Property.aggregate([
+      {
+        $geoNear: {
+          near: {
+            type: "Point",
+            coordinates: [userLongitude, userLatitude],
+          },
+          distanceField: "distance",
+          spherical: true,
+          query: exactQuery,
+        },
+      },
+      { $sort: { distance: 1 } }, // Sort by distance
+    ]);
 
-    const propertiesWithDistance = properties.map((property) => {
-      const distance = calculateDistance(
-        userLatitude,
-        userLongitude,
-        property.location.latitude,
-        property.location.longitude
-      );
-      return {
-        ...property.toObject(), // Convert Mongoose document to plain JavaScript object
-        distance: distance.toFixed(2), // Round distance to two decimal places
-      };
-    });
+    // Fetch similar matches excluding exact matches
+    const similarProperties = await Property.aggregate([
+      {
+        $geoNear: {
+          near: {
+            type: "Point",
+            coordinates: [userLongitude, userLatitude],
+          },
+          distanceField: "distance",
+          spherical: true,
+          query: similarQuery,
+        },
+      },
+      { $sort: { distance: 1 } }, // Sort by distance
+      {
+        $match: {
+          _id: { $nin: exactProperties.map((p) => p._id) },
+        },
+      },
+    ]);
+
+    const combinedProperties = [...exactProperties, ...similarProperties];
 
     res.status(200).json({
       status: "success",
-      data: propertiesWithDistance,
+      data: combinedProperties,
     });
   } catch (error) {
     console.error("Error fetching properties:", error);
@@ -337,6 +379,7 @@ export const listProperties = async (req, res) => {
     });
   }
 };
+
 
 export const contactOwner = async (req, res) => {
   const { propertyId } = req.params;
