@@ -25,14 +25,11 @@ export const createProfile = async (req, res, next) => {
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
 
-    res
-      .status(201)
-      .json({
-        status: "success",
-        id: user._id,
-        token,
-        message: "User registered successfully",
-      });
+    res.status(201).json({
+      status: "success",
+      data: { id: user._id, token },
+      message: "User registered successfully",
+    });
   } catch (error) {
     console.error("Error registering user:", error);
     next(error)
