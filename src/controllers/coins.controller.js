@@ -13,18 +13,16 @@ export const getBalance = async (req, res) => {
     if (!coins) {
       return res
         .status(404)
-        .json({ status: "fail", message: "Coins not found for this user." });
+        .json({ code: 404,data: {}, message: "Coins not found for this user." });
     }
 
-    res.status(200).json({ status: "success", balance: coins.balance });
+    res.status(200).json({code:200, data: {coins:coins.balance}, message: "Coins fetched successfully." });
   } catch (error) {
     console.error("Error fetching balance:", error);
-    res
-      .status(500)
-      .json({
-        status: "fail",
-        message: "An error occurred while fetching balance.",
-      });
+    res.status(500).json({
+      status: "fail",
+      message: "An error occurred while fetching balance.",
+    });
   }
 };
 
@@ -48,14 +46,12 @@ export const rechargeCoins = async (req, res) => {
 
     res
       .status(200)
-      .json({ status: "success", message: "Coins recharged successfully." });
+      .json({ code: 200, data:{balance: coins.balance}, message: "Coins recharged successfully." });
   } catch (error) {
     console.error("Error recharging coins:", error);
-    res
-      .status(500)
-      .json({
-        status: "fail",
-        message: "An error occurred while recharging coins.",
-      });
+    res.status(500).json({
+      status: "fail",
+      message: "An error occurred while recharging coins.",
+    });
   }
 };

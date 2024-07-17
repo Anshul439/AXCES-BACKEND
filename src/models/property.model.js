@@ -24,7 +24,6 @@ const PropertySchema = new mongoose.Schema(
     address: {
       type: String,
       required: true,
-      unique: true,
     },
     pincode: {
       type: String,
@@ -115,7 +114,6 @@ const PropertySchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-PropertySchema.index({ location: "2dsphere" });
 
 const Property = mongoose.model("Property", PropertySchema);
 export default Property;
