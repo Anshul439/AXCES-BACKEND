@@ -2,7 +2,7 @@ import Coins from "../models/coins.model.js";
 import User from "../models/user.model.js";
 
 // Get user's coin balance
-export const getBalance = async (req, res) => {
+export const getBalance = async (req, res,next) => {
   try {
     const userId = req.user.id; // Assuming user ID is retrieved from authentication middleware
     console.log(userId);
@@ -19,15 +19,12 @@ export const getBalance = async (req, res) => {
     res.status(200).json({code:200, data: {coins:coins.balance}, message: "Coins fetched successfully." });
   } catch (error) {
     console.error("Error fetching balance:", error);
-    res.status(500).json({
-      status: "fail",
-      message: "An error occurred while fetching balance.",
-    });
+    next(error)
   }
 };
 
 // Recharge user's coins
-export const rechargeCoins = async (req, res) => {
+export const rechargeCoins = async (req, res, next) => {
   const { amount } = req.body;
 
   try {
@@ -49,9 +46,6 @@ export const rechargeCoins = async (req, res) => {
       .json({ code: 200, data:{balance: coins.balance}, message: "Coins recharged successfully." });
   } catch (error) {
     console.error("Error recharging coins:", error);
-    res.status(500).json({
-      status: "fail",
-      message: "An error occurred while recharging coins.",
-    });
+    next(error)
   }
 };

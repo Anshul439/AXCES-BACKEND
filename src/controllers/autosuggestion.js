@@ -2,14 +2,11 @@ import axios from 'axios';
 
 const NOMINATIM_API_URL = 'https://nominatim.openstreetmap.org/search';
 
-export const getAutocompleteSuggestions = async (req, res) => {
+export const getAutocompleteSuggestions = async (req, res, next) => {
   const { query } = req.query;
 
   if (!query) {
-    return res.status(400).json({
-      status: 'fail',
-      message: 'Query parameter is required',
-    });
+    return next(errorHandler(400, res, "Query parameter is required"));
   }
 
   try {
@@ -35,9 +32,6 @@ export const getAutocompleteSuggestions = async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching autocomplete suggestions:', error);
-    res.status(500).json({
-      status: 'fail',
-      message: 'An error occurred while fetching suggestions',
-    });
+    next(error);
   }
 };

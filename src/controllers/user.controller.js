@@ -1,6 +1,7 @@
 import User from "../models/user.model.js";
 import Coins from "../models/coins.model.js";
 import jwt from "jsonwebtoken";
+import { errorHandler } from "../utils/error.js";
 
 export const createProfile = async (req, res, next) => {
   const { userId, name, email } = req.body;
@@ -12,9 +13,7 @@ export const createProfile = async (req, res, next) => {
     });
 
     if (user) {
-      return res
-        .status(400)
-        .json({ status: "fail", message: "userId or email already exists" });
+      return next(errorHandler(400, res, "userId or email already exists"));
     }
 
     user = new User({ userId, name, email });
@@ -32,11 +31,11 @@ export const createProfile = async (req, res, next) => {
     });
   } catch (error) {
     console.error("Error registering user:", error);
-    next(error)
+    next(error);
   }
 };
 
-export const updateUserProfile = async (req, res) => {
+export const updateUserProfile = async (req, res, next) => {
   const { name, email } = req.body;
   console.log(req.user);
   try {
@@ -47,20 +46,34 @@ export const updateUserProfile = async (req, res) => {
       { new: true, runValidators: true }
     );
 
-    res
-      .status(200)
-      .json({
-        code: 200,
-        data: user,
-        message: "Success"
-      });
+    res.status(200).json({
+      code: 200,
+      data: user,
+      message: "Success",
+    });
   } catch (error) {
     console.error("Error updating profile:", error);
-    res
-      .status(500)
-      .json({
-        status: "fail",
-        message: "An error occurred while updating the profile",
-      });
+    next(error);
+  }
+};
+
+
+export const getUserProfile = async (req, res, next) => {
+  try {
+    // Fetch user details by ID from the decoded token
+    const user = await User.findById(req.user.id).select("-password");
+
+    if (!user) {
+      return next(errorHandler(404, res, "User not found"));
+    }
+
+    res.status(200).json({
+      code: 200,
+      data: user,
+      message: "Success",
+    });
+  } catch (error) {
+    console.error("Error fetching user profile:", error);
+    next(error);
   }
 };

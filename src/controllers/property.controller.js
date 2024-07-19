@@ -55,9 +55,7 @@ export const postProperty = async (req, res, next) => {
     }
 
     if (!req.files || !req.files.images || req.files.images.length === 0) {
-      return res
-        .status(400)
-        .json({ code: 400, data: {}, message: "Image upload is required" });
+      return next(errorHandler(400, res, "Image upload is required"));
     }
 
     const imageLocalPath = req.files.images[0].path;
@@ -96,12 +94,6 @@ export const postProperty = async (req, res, next) => {
       images: imageResponse.url,
     });
 
-    // Create a token
-    const token = jwt.sign(
-      { propertyId: property._id },
-      process.env.JWT_SECRET
-    );
-
     const userCoins = await Coins.findOne({ userId: id });
     if (!userCoins || userCoins.balance < 50) {
       return next(errorHandler(402, res, "Insufficient balance"));
@@ -115,7 +107,7 @@ export const postProperty = async (req, res, next) => {
 
     res.status(201).json({
       code: 201,
-      data: { propertyId: property._id, token: token },
+      data: { propertyId: property._id },
       message: "Success",
     });
   } catch (error) {
@@ -131,9 +123,7 @@ export const editProperty = async (req, res, next) => {
     const property = await Property.findOne({ _id: propertyId });
 
     if (!property) {
-      return res
-        .status(404)
-        .json({ code: 404, data: {}, message: "Property not found" });
+      return next(errorHandler(404, res, "Property not found"));
     }
 
     // Update property details
@@ -158,9 +148,7 @@ export const deleteProperty = async (req, res) => {
     const property = await Property.findByIdAndDelete(propertyId);
 
     if (!property) {
-      return res
-        .status(404)
-        .json({ code: 404, data: {}, message: "Property not found" });
+      return next(errorHandler(402, res, "Property not found"));
     }
 
     res
@@ -181,11 +169,7 @@ export const getPropertyDetails = async (req, res) => {
     // console.log(property);
 
     if (!property) {
-      return res.status(404).json({
-        code: 404,
-        data: {},
-        message: "Property not found",
-      });
+      return next(errorHandler(404, res, "Property not found"));
     }
 
     res.status(200).json({
@@ -221,10 +205,7 @@ export const getPropertyDetails = async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching property details:", error);
-    res.status(500).json({
-      status: "fail",
-      message: "An error occurred while fetching the property details",
-    });
+    next(error);
   }
 };
 
@@ -381,33 +362,26 @@ export const contactOwner = async (req, res, next) => {
   console.log(userId);
   const property = await Property.findById(propertyId).populate("address");
   try {
-
     if (!propertyId.match(/^[a-fA-F0-9]{24}$/)) {
-      return res.status(400).json({
-        code: 400,
-        data: {},
-        message: "Invalid property ID format",
-      });
+      return next(errorHandler(404, res, "Property not found"));
     }
     // Find the property by ID and populate the owner details
 
     if (!property) {
-      return res.status(404).json({
-        code: 404,
-        data: {},
-        message: "Property not found",
-      });
+      return next(errorHandler(404, res, "Property not found"));
     }
 
     // Check user's coin balance
     const userCoins = await Coins.findOne({ userId });
     console.log(userCoins);
     if (!userCoins || userCoins.balance < 50) {
-      return res.status(402).json({
-        code: 402,
-        data: {},
-        message: "Insufficient balance. Please recharge your coins.",
-      });
+      return next(
+        errorHandler(
+          404,
+          res,
+          "Insufficient balance. Please recharge your coins"
+        )
+      );
     }
 
     // Deduct coins (assuming 50 coins deduction)
@@ -443,29 +417,27 @@ export const addToWishlist = async (req, res, next) => {
   try {
     const user = await User.findById(userId);
     if (!user) {
-      return res
-        .status(404)
-        .json({ code: 404, data: {}, message: "User not found" });
+      return next(errorHandler(404, res, "User not found"));
     }
 
     const property = await Property.findById(propertyId);
     if (!property) {
-      return res.status(404).json({ code: 404, data: {}, message: "Property not found" });
+      return next(errorHandler(404, res, "Property not found"));
     }
 
     // Check if property is already in wishlist
     if (user.wishlist.includes(propertyId)) {
-      return res
-        .status(400)
-        .json({ code:400, data:{}, message: "Property already in wishlist" });
+      return next(errorHandler(400, res, "Property already in wishlist"));
     }
 
     user.wishlist.push(propertyId);
     await user.save();
 
-    res
-      .status(200)
-      .json({ code: 200, data: {wishlist: user.wishlist}, message: "Property added to wishlist" });
+    res.status(200).json({
+      code: 200,
+      data: { wishlist: user.wishlist },
+      message: "Property added to wishlist",
+    });
   } catch (error) {
     console.error("Error adding to wishlist:", error);
     next(error);
@@ -481,9 +453,7 @@ export const viewWishlist = async (req, res, next) => {
   try {
     const user = await User.findById(userId).populate("wishlist");
     if (!user) {
-      return res
-        .status(404)
-        .json({code: 404, data: {}, message: "User not found" });
+      return next(errorHandler(404, res, "User not found"));
     }
 
     res.status(200).json({ status: "success", data: user.wishlist });
