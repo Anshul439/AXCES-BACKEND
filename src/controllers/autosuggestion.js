@@ -16,6 +16,10 @@ export const getAutocompleteSuggestions = async (req, res, next) => {
         format: 'json',
         limit: 5, // Limit the number of suggestions
       },
+      headers: {
+        'User-Agent': 'AXCES-BACKEND/1.0',
+        'Referer': 'https://https://axces-backend.onrender.com'
+      }
     });
 
     const suggestions = response.data.map((item) => ({

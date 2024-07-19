@@ -32,9 +32,11 @@ const PropertySchema = new mongoose.Schema(
     location: {
       latitude: {
         type: Number,
+        required: true
       },
       longitude: {
         type: Number,
+        required: true
       },
     },
     building_name: {
