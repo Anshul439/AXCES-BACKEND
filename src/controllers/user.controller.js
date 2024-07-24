@@ -4,19 +4,19 @@ import jwt from "jsonwebtoken";
 import { errorHandler } from "../utils/error.js";
 
 export const createProfile = async (req, res, next) => {
-  const { userId, name, email } = req.body;
+  const { number, name, email } = req.body;
 
   try {
     // Check if user already exists
     let user = await User.findOne({
-      $or: [{ userId }, { email }],
+      $or: [{ number }, { email }],
     });
 
     if (user) {
-      return next(errorHandler(400, res, "userId or email already exists"));
+      return next(errorHandler(400, res, "number or email already exists"));
     }
 
-    user = new User({ userId, name, email });
+    user = new User({ number, name, email });
     await user.save();
 
     const coins = new Coins({ userId: user._id });
