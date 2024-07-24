@@ -1,7 +1,6 @@
 import Property from "../models/property.model.js";
 import Coins from "../models/coins.model.js";
 import User from "../models/user.model.js";
-import jwt from "jsonwebtoken";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { errorHandler } from "../utils/error.js";
 
@@ -10,6 +9,7 @@ export const postProperty = async (req, res, next) => {
   console.log(id);
 
   const {
+    listing_type,
     property_type,
     title,
     description,
@@ -38,17 +38,17 @@ export const postProperty = async (req, res, next) => {
   // console.log(location);
 
   try {
-    let property = await Property.findOne({
+    let existingProperty = await Property.findOne({
       $or: [
         { "location.latitude": location.latitude },
         { "location.longitude": location.longitude },
       ],
     });
 
-    if (property) {
+    if (existingProperty) {
       if (
-        property.location.latitude === location.latitude &&
-        property.location.longitude === location.longitude
+        existingProperty.location.latitude === location.latitude &&
+        existingProperty.location.longitude === location.longitude
       ) {
         return next(errorHandler(400, res, "Property already exists"));
       }
@@ -61,14 +61,15 @@ export const postProperty = async (req, res, next) => {
     const imageLocalPath = req.files.images[0].path;
     const imageResponse = await uploadOnCloudinary(imageLocalPath);
 
-    const owner_name_model = await User.findById(id).select("name");
-    // console.log(owner_name_model.name);
-
-    const owner_name = owner_name_model.name; // final owner name extracted from user model
+    const owner_model = await User.findById(id);
+    const owner_name = owner_model.name; // final owner name extracted from user model
+    const owner_phone = owner_model.number; // final owner phone extracted from user model
 
     // Create a new property
-    property = new Property({
+    let property = new Property({
+      listing_type,
       owner_name,
+      owner_phone,
       property_type,
       title,
       description,
@@ -107,7 +108,7 @@ export const postProperty = async (req, res, next) => {
 
     res.status(201).json({
       code: 201,
-      data: { propertyId: property._id },
+      data: property,
       message: "Success",
     });
   } catch (error) {
@@ -160,7 +161,7 @@ export const deleteProperty = async (req, res) => {
   }
 };
 
-export const getPropertyDetails = async (req, res) => {
+export const getPropertyDetails = async (req, res, next) => {
   const { id } = req.params;
   // console.log(id);
 
@@ -174,33 +175,7 @@ export const getPropertyDetails = async (req, res) => {
 
     res.status(200).json({
       code: 200,
-      data: {
-        title: property.title,
-        description: property.description,
-        address: property.address,
-        pincode: property.pincode,
-        location: {
-          latitude: property.location.latitude,
-          longitude: property.location.longitude,
-        },
-        building_name: property.building_name,
-        bedrooms: property.bedrooms,
-        bathrooms: property.bathrooms,
-        area_sqft: property.area_sqft,
-        property_age: property.property_age,
-        facing: property.facing,
-        floor_number: property.floor_number,
-        total_floors: property.total_floors,
-        furnish_type: property.furnish_type,
-        available_from: property.available_from,
-        monthly_rent: property.monthly_rent,
-        security_deposit: property.security_deposit,
-        preferred_tenant: property.preferred_tenant,
-        localities: property.localities,
-        landmark: property.landmark,
-        facilities: property.facilities,
-        images: property.images,
-      },
+      data: property ,
       message: "Property details fetched successfully",
     });
   } catch (error) {
@@ -411,38 +386,51 @@ export const contactOwner = async (req, res, next) => {
 };
 
 export const addToWishlist = async (req, res, next) => {
-  const { propertyId } = req.body;
+  const { propertyId, action } = req.body;
   const userId = req.user.id;
 
   try {
+    // Find the user
     const user = await User.findById(userId);
     if (!user) {
       return next(errorHandler(404, res, "User not found"));
     }
 
+    // Find the property
     const property = await Property.findById(propertyId);
     if (!property) {
       return next(errorHandler(404, res, "Property not found"));
     }
 
-    // Check if property is already in wishlist
-    if (user.wishlist.includes(propertyId)) {
-      return next(errorHandler(400, res, "Property already in wishlist"));
+    // Check action and update wishlist
+    if (action === 1) { // Add to wishlist
+      if (user.wishlist.includes(propertyId)) {
+        return next(errorHandler(400, res, "Property already in wishlist"));
+      }
+      user.wishlist.push(propertyId);
+    } else if (action === -1) { // Remove from wishlist
+      if (!user.wishlist.includes(propertyId)) {
+        return next(errorHandler(400, res, "Property not found in wishlist"));
+      }
+      user.wishlist = user.wishlist.filter(id => id.toString() !== propertyId.toString());
+    } else {
+      return next(errorHandler(400, res, "Invalid action"));
     }
 
-    user.wishlist.push(propertyId);
+    // Save the updated user
     await user.save();
 
     res.status(200).json({
       code: 200,
       data: { wishlist: user.wishlist },
-      message: "Property added to wishlist",
+      message: action === 1 ? "Property added to wishlist" : "Property removed from wishlist",
     });
   } catch (error) {
-    console.error("Error adding to wishlist:", error);
+    console.error("Error updating wishlist:", error);
     next(error);
   }
 };
+
 
 export const viewWishlist = async (req, res, next) => {
   const userId = req.user.id;

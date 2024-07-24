@@ -2,12 +2,16 @@ import mongoose from "mongoose";
 
 const PropertySchema = new mongoose.Schema(
   {
+    listing_type: {
+      type: String,
+      enum: ["buy", "rent"],
+      required: true,
+    },
     owner_name: {
       type: String,
     },
     owner_phone: {
       type: Number,
-      default: 9342567953,
     },
     property_type: {
       type: String,
@@ -32,11 +36,11 @@ const PropertySchema = new mongoose.Schema(
     location: {
       latitude: {
         type: Number,
-        required: true
+        required: true,
       },
       longitude: {
         type: Number,
-        required: true
+        required: true,
       },
     },
     building_name: {
@@ -115,7 +119,6 @@ const PropertySchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-
 
 const Property = mongoose.model("Property", PropertySchema);
 export default Property;
