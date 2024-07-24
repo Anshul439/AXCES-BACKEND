@@ -38,17 +38,16 @@ export const postProperty = async (req, res, next) => {
   // console.log(location);
 
   try {
-    let existingProperty = await Property.findOne({
-      $or: [
-        { "location.latitude": location.latitude },
-        { "location.longitude": location.longitude },
-      ],
+    let property = await Property.findOne({
+         "location.latitude": location.latitude ,
+         "location.longitude": location.longitude ,
+      
     });
 
-    if (existingProperty) {
+    if (property) {
       if (
-        existingProperty.location.latitude === location.latitude &&
-        existingProperty.location.longitude === location.longitude
+        property.location.latitude === location.latitude &&
+        property.location.longitude === location.longitude
       ) {
         return next(errorHandler(400, res, "Property already exists"));
       }
@@ -66,7 +65,7 @@ export const postProperty = async (req, res, next) => {
     const owner_phone = owner_model.number; // final owner phone extracted from user model
 
     // Create a new property
-    let property = new Property({
+    property = new Property({
       listing_type,
       owner_name,
       owner_phone,
@@ -103,8 +102,8 @@ export const postProperty = async (req, res, next) => {
     await property.save();
     // console.log(property);
 
-    userCoins.balance -= 50;
-    await userCoins.save();
+    // userCoins.balance -= 50;
+    // await userCoins.save();
 
     res.status(201).json({
       code: 201,
