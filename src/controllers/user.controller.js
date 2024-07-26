@@ -7,30 +7,46 @@ export const createProfile = async (req, res, next) => {
   const { number, name, email } = req.body;
 
   try {
-    // Check if user already exists
-    let user = await User.findOne({
-      $or: [{ number }, { email }],
-    });
+    // Check if user exists with the given phone number
+
+
+
+
+    let user = await User.findOne({ number });
 
     if (user) {
-      return next(errorHandler(400, res, "number or email already exists"));
+      // User exists, return user details with token
+      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
+
+      return res.status(200).json({
+        status: "success",
+        data: { id: user._id, name: user.name, email: user.email, token },
+        message: "User found successfully",
+      });
+    } else {
+
+      user = await User.findOne({ email });
+
+      if (user) {
+        return next(errorHandler(400, res, "email already exists"));
+      }
+      // User does not exist, create a new profile
+      user = new User({ number, name, email });
+      await user.save();
+
+      const coins = new Coins({ userId: user._id });
+      await coins.save();
+
+      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
+
+      return res.status(201).json({
+        status: "success",
+        data: { id: user._id, name: user.name, email: user.email, token },
+        message: "User registered successfully",
+      });
     }
-
-    user = new User({ number, name, email });
-    await user.save();
-
-    const coins = new Coins({ userId: user._id });
-    await coins.save();
-
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
-
-    res.status(201).json({
-      status: "success",
-      data: { id: user._id, token },
-      message: "User registered successfully",
-    });
   } catch (error) {
-    console.error("Error registering user:", error);
+    console.error("Error handling user:", error);
     next(error);
   }
 };
@@ -56,7 +72,6 @@ export const updateUserProfile = async (req, res, next) => {
     next(error);
   }
 };
-
 
 export const getUserProfile = async (req, res, next) => {
   try {

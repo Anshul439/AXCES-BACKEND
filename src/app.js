@@ -4,6 +4,7 @@ import connectDB from './config/db.js';
 import userRoutes from './routes/user.route.js';
 import propertyRoutes from './routes/property.route.js';
 import coinsRoutes from './routes/coins.route.js';
+import adminRoutes from './routes/admin.route.js';
 import autoSuggestRoutes from './routes/autosuggestion.js';
 
 const app = express();
@@ -14,6 +15,7 @@ app.use(bodyParser.json());
 
 connectDB();
 
+app.use('/api/admin', adminRoutes);
 app.use('/api', userRoutes);
 app.use('/api', propertyRoutes);
 app.use('/api', coinsRoutes);

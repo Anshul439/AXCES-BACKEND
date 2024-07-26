@@ -16,7 +16,13 @@ const UserSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
-    wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: "Property" }],
+
+    wishlist: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Property",
+      },
+    ],
   },
   { timestamps: true }
 );
