@@ -4,13 +4,11 @@ import jwt from "jsonwebtoken";
 import { errorHandler } from "../utils/error.js";
 
 export const createProfile = async (req, res, next) => {
-  const { number, name, email } = req.body;
+  
 
   try {
+    const { number } = req.body;
     // Check if user exists with the given phone number
-
-
-
 
     let user = await User.findOne({ number });
 
@@ -24,6 +22,11 @@ export const createProfile = async (req, res, next) => {
         message: "User found successfully",
       });
     } else {
+
+      const { number, name, email } = req.body;
+      if(!number || !name || !email){
+        return next(errorHandler(400, res, "Please provide all the required fields"));
+      }
 
       user = await User.findOne({ email });
 
