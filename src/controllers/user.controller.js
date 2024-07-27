@@ -4,8 +4,6 @@ import jwt from "jsonwebtoken";
 import { errorHandler } from "../utils/error.js";
 
 export const createProfile = async (req, res, next) => {
-  
-
   try {
     const { number } = req.body;
     // Check if user exists with the given phone number
@@ -22,10 +20,11 @@ export const createProfile = async (req, res, next) => {
         message: "User found successfully",
       });
     } else {
-
       const { number, name, email } = req.body;
-      if(!number || !name || !email){
-        return next(errorHandler(400, res, "Please provide all the required fields"));
+      if (!number || !name || !email) {
+        return next(
+          errorHandler(400, res, "Please provide all the required fields")
+        );
       }
 
       user = await User.findOne({ email });
@@ -47,6 +46,35 @@ export const createProfile = async (req, res, next) => {
         data: { id: user._id, name: user.name, email: user.email, token },
         message: "User registered successfully",
       });
+    }
+  } catch (error) {
+    console.error("Error handling user:", error);
+    next(error);
+  }
+};
+
+export const verifyNumber = async (req, res, next) => {
+  try {
+    const { number } = req.body;
+    // Check if user exists with the given phone number
+
+    let user = await User.findOne({ number });
+
+    if(!number) {
+      return next(errorHandler(400, res, "Number is required"));
+    }
+
+    if (user) {
+      // User exists, return user details with token
+      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
+
+      return res.status(200).json({
+        status: "success",
+        data: { id: user._id, name: user.name, email: user.email, token },
+        message: "User found successfully",
+      });
+    } else {
+      return next(errorHandler(404, res, "User not found"));
     }
   } catch (error) {
     console.error("Error handling user:", error);
