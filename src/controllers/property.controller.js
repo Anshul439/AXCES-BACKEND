@@ -39,9 +39,8 @@ export const postProperty = async (req, res, next) => {
 
   try {
     let property = await Property.findOne({
-         "location.latitude": location.latitude ,
-         "location.longitude": location.longitude ,
-      
+      "location.latitude": location.latitude,
+      "location.longitude": location.longitude,
     });
 
     if (property) {
@@ -174,7 +173,7 @@ export const getPropertyDetails = async (req, res, next) => {
 
     res.status(200).json({
       code: 200,
-      data: property ,
+      data: property,
       message: "Property details fetched successfully",
     });
   } catch (error) {
@@ -201,24 +200,43 @@ export const listProperties = async (req, res, next) => {
 
     // Apply filters for exact match query
     if (filters) {
+      if (filters.listing_type) {
+        exactQuery.listing_type = {
+          $regex: `\\b${filters.listing_type}\\b`,
+          $options: "i",
+        };
+      }
       if (filters.property_type) {
-        exactQuery.property_type = filters.property_type;
+        exactQuery.property_type = {
+          $regex: `\\b${filters.property_type}\\b`,
+          $options: "i",
+        };
       }
       if (filters.title) {
-        exactQuery.title = { $regex: filters.title, $options: "i" };
+        exactQuery.title = { $regex: `\\b${filters.title}\\b`, $options: "i" };
       }
       if (filters.description) {
-        exactQuery.description = { $regex: filters.description, $options: "i" };
+        exactQuery.description = {
+          $regex: `\\b${filters.description}\\b`,
+          $options: "i",
+        };
       }
       if (filters.address) {
-        exactQuery.address = { $regex: filters.address, $options: "i" };
+        exactQuery.address = {
+          $regex: `\\b${filters.address}\\b`,
+          $options: "i",
+        };
       }
       if (filters.pincode) {
-        exactQuery.pincode = filters.pincode;
+        exactQuery.pincode = {
+          $regex: `\\b${filters.pincode}\\b`,
+          $options: "i",
+        };
       }
+      
       if (filters.building_name) {
         exactQuery.building_name = {
-          $regex: filters.building_name,
+          $regex: `\\b${filters.building_name}\\b`,
           $options: "i",
         };
       }
@@ -235,7 +253,10 @@ export const listProperties = async (req, res, next) => {
         exactQuery.property_age = filters.property_age;
       }
       if (filters.facing) {
-        exactQuery.facing = filters.facing;
+        exactQuery.facing = {
+          $regex: `\\b${filters.facing}\\b`,
+          $options: "i",
+        };
       }
       if (filters.floor_number) {
         exactQuery.floor_number = filters.floor_number;
@@ -244,33 +265,55 @@ export const listProperties = async (req, res, next) => {
         exactQuery.total_floors = filters.total_floors;
       }
       if (filters.furnish_type) {
-        exactQuery.furnish_type = filters.furnish_type;
+        exactQuery.furnish_type = {
+          $regex: `\\b${filters.furnish_type}\\b`,
+          $options: "i",
+        };
       }
       if (filters.available_from) {
-        exactQuery.available_from = { $gte: new Date(filters.available_from) };
+        exactQuery.available_from = filters.available_from;
       }
       if (filters.monthly_rent) {
-        exactQuery.monthly_rent = { $lte: filters.monthly_rent };
+        exactQuery.monthly_rent = filters.monthly_rent;
       }
       if (filters.security_deposit) {
-        exactQuery.security_deposit = { $lte: filters.security_deposit };
+        exactQuery.security_deposit = filters.security_deposit;
       }
       if (filters.preferred_tenant) {
-        exactQuery.preferred_tenant = filters.preferred_tenant;
+        exactQuery.preferred_tenant = {
+          $regex: `\\b${filters.preferred_tenant}\\b`,
+          $options: "i",
+        };
       }
       if (filters.localities && Array.isArray(filters.localities)) {
-        exactQuery.localities = { $in: filters.localities };
+        exactQuery.localities = {
+          $regex: `\\b${filters.localities}\\b`,
+          $options: "i",
+        };
       }
       if (filters.landmark) {
-        exactQuery.landmark = { $regex: filters.landmark, $options: "i" };
+        exactQuery.landmark = {
+          $regex: `\\b${filters.landmark}\\b`,
+          $options: "i",
+        };
       }
       if (filters.facilities && Array.isArray(filters.facilities)) {
-        exactQuery.facilities = { $in: filters.facilities };
+        exactQuery.facilities = {
+          $regex: `\\b${filters.facilities}\\b`,
+          $options: "i",
+        };
       }
     }
 
-    const exactProperties = await Property.find(exactQuery).lean(); // Using .lean() to get plain JavaScript objects
-    const allProperties = await Property.find().lean(); // Fetch all properties for fallback
+    const exactProperties = await Property.find(exactQuery).lean();
+
+    if (exactProperties.length === 0) {
+      return res.status(200).json({
+        code: 200,
+        data: [],
+        message: "No properties match the given filters",
+      });
+    }
 
     // Calculate distance and add it to the properties
     const addDistanceToProperties = (properties) => {
@@ -297,31 +340,14 @@ export const listProperties = async (req, res, next) => {
 
     const exactPropertiesWithDistance =
       addDistanceToProperties(exactProperties);
-    const allPropertiesWithDistance = addDistanceToProperties(allProperties);
 
-    // Filter out properties that are already in exactProperties from allProperties
-    const uniqueFallbackProperties = allPropertiesWithDistance.filter(
-      (fallbackProperty) =>
-        !exactPropertiesWithDistance.some(
-          (exactProperty) =>
-            exactProperty._id.toString() === fallbackProperty._id.toString()
-        )
-    );
-
-    // Sort unique fallback properties by distance
-    uniqueFallbackProperties.sort(
+    exactPropertiesWithDistance.sort(
       (a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity)
     );
 
-    // Combine exact match properties and distance-sorted fallback properties
-    const combinedProperties = [
-      ...exactPropertiesWithDistance,
-      ...uniqueFallbackProperties,
-    ];
-
     res.status(200).json({
       code: 200,
-      data: combinedProperties.slice(0, 10), // Limit to 10 properties
+      data: exactPropertiesWithDistance.slice(0, 10), // Limit to 10 properties
       message: "Properties fetched successfully",
     });
   } catch (error) {
@@ -402,16 +428,20 @@ export const addToWishlist = async (req, res, next) => {
     }
 
     // Check action and update wishlist
-    if (action === 1) { // Add to wishlist
+    if (action === 1) {
+      // Add to wishlist
       if (user.wishlist.includes(propertyId)) {
         return next(errorHandler(400, res, "Property already in wishlist"));
       }
       user.wishlist.push(propertyId);
-    } else if (action === -1) { // Remove from wishlist
+    } else if (action === -1) {
+      // Remove from wishlist
       if (!user.wishlist.includes(propertyId)) {
         return next(errorHandler(400, res, "Property not found in wishlist"));
       }
-      user.wishlist = user.wishlist.filter(id => id.toString() !== propertyId.toString());
+      user.wishlist = user.wishlist.filter(
+        (id) => id.toString() !== propertyId.toString()
+      );
     } else {
       return next(errorHandler(400, res, "Invalid action"));
     }
@@ -422,14 +452,16 @@ export const addToWishlist = async (req, res, next) => {
     res.status(200).json({
       code: 200,
       data: { wishlist: user.wishlist },
-      message: action === 1 ? "Property added to wishlist" : "Property removed from wishlist",
+      message:
+        action === 1
+          ? "Property added to wishlist"
+          : "Property removed from wishlist",
     });
   } catch (error) {
     console.error("Error updating wishlist:", error);
     next(error);
   }
 };
-
 
 export const viewWishlist = async (req, res, next) => {
   const userId = req.user.id;

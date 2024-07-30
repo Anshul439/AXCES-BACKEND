@@ -60,7 +60,7 @@ const PropertySchema = new mongoose.Schema(
       required: true,
     },
     property_age: {
-      type: String,
+      type: Number,
       required: true,
     },
     facing: {
