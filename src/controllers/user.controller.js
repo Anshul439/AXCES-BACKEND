@@ -84,25 +84,6 @@ export const verifyNumber = async (req, res, next) => {
   }
 };
 
-export const verifyOtp = async (req, res, next) => {
-  try {
-    const { otp } = req.body;
-
-    if (!otp || !/^\d{6}$/.test(otp)) {
-      return next(errorHandler(400, res, "It must be a 6-digit number."));
-    }
-
-    // Simulate OTP verification and always return success
-    return res.status(200).json({
-      status: "success",
-      message: "OTP verified successfully"
-    });
-  } catch (error) {
-    console.error("Error verifying OTP:", error);
-    next(error);
-  }
-};
-
 
 export const updateUserProfile = async (req, res, next) => {
   const { name, email } = req.body;
@@ -147,80 +128,51 @@ export const getUserProfile = async (req, res, next) => {
 };
 
 
-import fetch from 'node-fetch';
 
-const API_KEY = process.env['2FACTOR_API_KEY'];
-const BASE_URL = process.env['2FACTOR_BASE_URL'];
 
-export const sendOtp = async (req, res) => {
-  const { phoneNumber } = req.body;
-
-  if (!phoneNumber) {
-    return res.status(400).json({
-      code: 400,
-      message: "Phone number is required",
-    });
-  }
-
-  const otp = Math.floor(100000 + Math.random() * 900000); // Generate a 6-digit OTP
-
+export const sendOtp = async (req, res, next) => {
   try {
-    const response = await fetch(BASE_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        module: 'TRANS_SMS',
-        apikey: API_KEY,
-        to: phoneNumber,
-        from: 'YOUR_SENDER_ID', // Replace with your DLT approved sender ID
-        msg: `Your OTP is ${otp}.`,
-      }).toString(),
-    });
+    const { phoneNumber } = req.body;
 
-    const data = await response.json();
-
-    if (data.Status === 'Success') {
-      // OTP sent successfully
-      res.status(200).json({
-        code: 200,
-        message: "OTP sent successfully",
-        otp: otp, // For testing, remove this in production
-      });
-    } else {
-      console.error("API response error:", data);
-      res.status(500).json({
-        code: 500,
-        message: "Failed to send OTP",
-        details: data,
-      });
+    if (!phoneNumber || !/^\d{10}$/.test(phoneNumber)) {
+      return next(errorHandler(400, res, "Invalid phone number."));
     }
+
+    // Simulate sending OTP
+    console.log(`Sending OTP to phone number ${phoneNumber}`);
+
+    return res.status(200).json({
+      status: "success",
+      message: "OTP sent successfully",
+    });
   } catch (error) {
     console.error("Error sending OTP:", error);
-    res.status(500).json({
-      code: 500,
-      message: "An error occurred while sending OTP",
-    });
+    next(error);
   }
 };
 
 
 
-// Function to verify OTP (always shows as verified)
-export const verifyNewOtp = (req, res) => {
-  const { otp } = req.body;
 
-  if (!otp) {
-    return res.status(400).json({
-      code: 400,
-      message: "OTP is required",
-    });
+export const verifyOtp = async (req, res, next) => {
+  try {
+    const { otp } = req.body;
+
+    if (!otp || !/^\d{6}$/.test(otp)) {
+      return next(errorHandler(400, res, "Invalid OTP"));
+    }
+
+    if (otp === 123456) {
+      return res.status(200).json({
+        status: "success",
+        message: "Number verified successfully",
+      });
+    } else {
+      return next(errorHandler(400, res, "Invalid OTP."));
+    }
+  } catch (error) {
+    console.error("Error verifying OTP:", error);
+    next(error);
   }
-
-  // Since we're not storing OTPs, we assume verification is always successful
-  res.status(200).json({
-    code: 200,
-    message: "OTP verified successfully",
-  });
 };
+

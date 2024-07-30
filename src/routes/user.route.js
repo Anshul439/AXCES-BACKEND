@@ -7,10 +7,9 @@ const router = express.Router();
 router.post('/profile', createProfile);
 router.post('/user/profile', authenticateToken, updateUserProfile);
 router.get('/profile', authenticateToken, getUserProfile);
+router.post('/send-otp', sendOtp);
 router.post('/verify-otp', verifyOtp);
 
 router.post('/user/verify', verifyNumber);
-
-router.post('/send-otp', sendOtp)
 
 export default router;
