@@ -32,7 +32,6 @@ export const adminSignup = async (req, res) => {
   }
 };
 
-  
 
 // Admin Signin
 export const adminSignin = async (req, res) => {
@@ -84,10 +83,14 @@ export const getUserDetails = async (req, res) => {
 // Update User
 export const updateUser = async (req, res) => {
   const { userId } = req.params;
-  const updates = req.body;
+  const {name, email} = req.body;
 
   try {
-    const updatedUser = await User.findByIdAndUpdate(userId, updates, { new: true });
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $set: { name, email } },
+      { new: true, runValidators: true }
+    );
     if (!updatedUser) {
       return res.status(404).json({ message: 'User not found' });
     }

@@ -6,8 +6,9 @@ const router = express.Router();
 
 router.post('/signup', adminSignup);
 
-router.get('/users', adminMiddleware, getAllUsers);
+router.get('/users', getAllUsers);
 router.get('/users/:userId', getUserDetails);
 router.put('/users/:userId', updateUser);
+
 
 export default router;

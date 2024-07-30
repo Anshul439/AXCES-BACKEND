@@ -82,6 +82,26 @@ export const verifyNumber = async (req, res, next) => {
   }
 };
 
+export const verifyOtp = async (req, res, next) => {
+  try {
+    const { otp } = req.body;
+
+    if (!otp || !/^\d{6}$/.test(otp)) {
+      return next(errorHandler(400, res, "It must be a 6-digit number."));
+    }
+
+    // Simulate OTP verification and always return success
+    return res.status(200).json({
+      status: "success",
+      message: "OTP verified successfully"
+    });
+  } catch (error) {
+    console.error("Error verifying OTP:", error);
+    next(error);
+  }
+};
+
+
 export const updateUserProfile = async (req, res, next) => {
   const { name, email } = req.body;
   console.log(req.user);
