@@ -2,6 +2,8 @@ import User from "../models/user.model.js";
 import Coins from "../models/coins.model.js";
 import jwt from "jsonwebtoken";
 import { errorHandler } from "../utils/error.js";
+import dotenv from 'dotenv';
+dotenv.config();
 
 export const createProfile = async (req, res, next) => {
   try {
@@ -142,4 +144,83 @@ export const getUserProfile = async (req, res, next) => {
     console.error("Error fetching user profile:", error);
     next(error);
   }
+};
+
+
+import fetch from 'node-fetch';
+
+const API_KEY = process.env['2FACTOR_API_KEY'];
+const BASE_URL = process.env['2FACTOR_BASE_URL'];
+
+export const sendOtp = async (req, res) => {
+  const { phoneNumber } = req.body;
+
+  if (!phoneNumber) {
+    return res.status(400).json({
+      code: 400,
+      message: "Phone number is required",
+    });
+  }
+
+  const otp = Math.floor(100000 + Math.random() * 900000); // Generate a 6-digit OTP
+
+  try {
+    const response = await fetch(BASE_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        module: 'TRANS_SMS',
+        apikey: API_KEY,
+        to: phoneNumber,
+        from: 'YOUR_SENDER_ID', // Replace with your DLT approved sender ID
+        msg: `Your OTP is ${otp}.`,
+      }).toString(),
+    });
+
+    const data = await response.json();
+
+    if (data.Status === 'Success') {
+      // OTP sent successfully
+      res.status(200).json({
+        code: 200,
+        message: "OTP sent successfully",
+        otp: otp, // For testing, remove this in production
+      });
+    } else {
+      console.error("API response error:", data);
+      res.status(500).json({
+        code: 500,
+        message: "Failed to send OTP",
+        details: data,
+      });
+    }
+  } catch (error) {
+    console.error("Error sending OTP:", error);
+    res.status(500).json({
+      code: 500,
+      message: "An error occurred while sending OTP",
+    });
+  }
+};
+
+
+
+// Function to verify OTP (always shows as verified)
+export const verifyNewOtp = (req, res) => {
+  const { otp } = req.body;
+
+  if (!otp) {
+    return res.status(400).json({
+      code: 400,
+      message: "OTP is required",
+    });
+  }
+
+  // Since we're not storing OTPs, we assume verification is always successful
+  res.status(200).json({
+    code: 200,
+    message: "OTP verified successfully",
+  });
 };
