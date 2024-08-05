@@ -6,7 +6,6 @@ import { errorHandler } from "../utils/error.js";
 
 export const postProperty = async (req, res, next) => {
   const id = req.params.id;
-  console.log(id);
 
   const {
     listing_type,
@@ -33,9 +32,7 @@ export const postProperty = async (req, res, next) => {
     facilities,
   } = req.body;
 
-  // console.log(req.body);
   let location = JSON.parse(req.body.location);
-  // console.log(location);
 
   try {
     let property = await Property.findOne({
@@ -60,8 +57,8 @@ export const postProperty = async (req, res, next) => {
     const imageResponse = await uploadOnCloudinary(imageLocalPath);
 
     const owner_model = await User.findById(id);
-    const owner_name = owner_model.name; // final owner name extracted from user model
-    const owner_phone = owner_model.number; // final owner phone extracted from user model
+    const owner_name = owner_model.name;
+    const owner_phone = owner_model.number;
 
     // Create a new property
     property = new Property({
@@ -93,27 +90,32 @@ export const postProperty = async (req, res, next) => {
       images: imageResponse.url,
     });
 
+    // Fetch the default property post cost and user's coin balance
+    const defaultCoinConfig = await Coins.findOne({});
+    const defaultPropertyPostCost = defaultCoinConfig.defaultPropertyPostCost;
+
     const userCoins = await Coins.findOne({ userId: id });
-    if (!userCoins || userCoins.balance < 50) {
+    if (!userCoins || userCoins.balance < defaultPropertyPostCost) {
       return next(errorHandler(402, res, "Insufficient balance"));
     }
 
+    // Save the property and update user's coin balance
     await property.save();
-    // console.log(property);
 
-    // userCoins.balance -= 50;
-    // await userCoins.save();
+    userCoins.balance -= defaultPropertyPostCost;
+    await userCoins.save();
 
     res.status(201).json({
       code: 201,
       data: property,
-      message: "Success",
+      message: "Property posted successfully",
     });
   } catch (error) {
-    console.error("Error listing property:", error);
+    console.error("Error posting property:", error);
     next(error);
   }
 };
+
 
 export const editProperty = async (req, res, next) => {
   const { propertyId, updatedPropertyDetails } = req.body;
@@ -359,41 +361,38 @@ export const listProperties = async (req, res, next) => {
 export const contactOwner = async (req, res, next) => {
   const { propertyId } = req.params;
   const userId = req.user.id;
-  console.log(userId);
-  const property = await Property.findById(propertyId).populate("address");
+
   try {
     if (!propertyId.match(/^[a-fA-F0-9]{24}$/)) {
       return next(errorHandler(404, res, "Property not found"));
     }
-    // Find the property by ID and populate the owner details
 
+    // Find the property by ID
+    const property = await Property.findById(propertyId);
     if (!property) {
       return next(errorHandler(404, res, "Property not found"));
     }
 
-    // Check user's coin balance
+    // Fetch the default cost for contacting owner and user's coin balance
+    const defaultCoinConfig = await Coins.findOne({});
+    const defaultOwnerDetailsBalance = defaultCoinConfig.defaultOwnerDetailsCost;
+
     const userCoins = await Coins.findOne({ userId });
-    console.log(userCoins);
-    if (!userCoins || userCoins.balance < 50) {
+    if (!userCoins || userCoins.balance < defaultOwnerDetailsBalance) {
       return next(
         errorHandler(
-          404,
+          402,
           res,
           "Insufficient balance. Please recharge your coins"
         )
       );
     }
 
-    // Deduct coins (assuming 50 coins deduction)
-    userCoins.balance -= 50;
+    // Deduct coins
+    userCoins.balance -= defaultOwnerDetailsBalance;
     await userCoins.save();
 
     // Respond with owner's contact details
-    // const { owner_id } = property;
-    // console.log(owner_id);
-    // const { contact_details } = owner_id;
-    // console.log(contact_details);
-
     res.status(200).json({
       code: 200,
       data: {
@@ -409,6 +408,7 @@ export const contactOwner = async (req, res, next) => {
     next(error);
   }
 };
+
 
 export const addToWishlist = async (req, res, next) => {
   const { propertyId, action } = req.body;

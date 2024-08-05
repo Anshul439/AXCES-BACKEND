@@ -14,6 +14,9 @@ const UserSchema = new mongoose.Schema(
       type: String,
       unique: true,
     },
+    balance: {
+      type: Number
+    },
 
     wishlist: [
       {

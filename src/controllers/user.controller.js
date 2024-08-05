@@ -8,8 +8,8 @@ dotenv.config();
 export const createProfile = async (req, res, next) => {
   try {
     const { number } = req.body;
-    // Check if user exists with the given phone number
 
+    // Check if user exists with the given phone number
     let user = await User.findOne({ number });
 
     if (user) {
@@ -32,13 +32,19 @@ export const createProfile = async (req, res, next) => {
       user = await User.findOne({ email });
 
       if (user) {
-        return next(errorHandler(400, res, "email already exists"));
+        return next(errorHandler(400, res, "Email already exists"));
       }
+
+      // Get the default coin balance
+      const defaultBalanceDoc = await Coins.findOne({});
+      // console.log(defaultBalanceDoc);
+      const defaultBalance = defaultBalanceDoc ? defaultBalanceDoc.balance : 200;
+
       // User does not exist, create a new profile
-      user = new User({ number, name, email });
+      user = new User({ number, name, email, defaultBalanceDoc });
       await user.save();
 
-      const coins = new Coins({ userId: user._id });
+      const coins = new Coins({ userId: user._id, balance: defaultBalance });
       await coins.save();
 
       const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
@@ -54,6 +60,7 @@ export const createProfile = async (req, res, next) => {
     next(error);
   }
 };
+
 
 export const verifyNumber = async (req, res, next) => {
   try {

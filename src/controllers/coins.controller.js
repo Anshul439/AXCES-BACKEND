@@ -1,5 +1,4 @@
 import Coins from "../models/coins.model.js";
-import User from "../models/user.model.js";
 
 // Get user's coin balance
 export const getBalance = async (req, res,next) => {

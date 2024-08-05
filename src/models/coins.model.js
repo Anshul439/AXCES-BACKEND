@@ -1,16 +1,40 @@
+// coins.model.js
 import mongoose from 'mongoose';
 
 const CoinsSchema = new mongoose.Schema({
   userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    type: String,
     required: true,
-    unique: true
+    unique: true,
   },
   balance: {
     type: Number,
-    default: 50
-  }
+    default: 200,
+  },
+  defaultPropertyPostCost: {
+    type: Number,
+    default: 10
+  },
+  defaultOwnerDetailsCost: {
+    type: Number,
+    default: 10
+  },
+  transactions: [
+    {
+      type: {
+        type: String, // 'recharge' or 'deduction'
+        required: true,
+      },
+      amount: {
+        type: Number,
+        required: true,
+      },
+      timestamp: {
+        type: Date,
+        default: Date.now,
+      },
+    },
+  ],
 });
 
 const Coins = mongoose.model('Coins', CoinsSchema);
