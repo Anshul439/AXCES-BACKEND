@@ -54,6 +54,7 @@ export const postProperty = async (req, res, next) => {
     }
 
     const imageLocalPath = req.files.images[0].path;
+    console.log(req.files);
     const imageResponse = await uploadOnCloudinary(imageLocalPath);
 
     const owner_model = await User.findById(id);

@@ -1,6 +1,5 @@
 import express from "express";
 import {
-  adminGetBalance,
   adminGetTransactions,
   adminUpdateBalance,
   getAllUsers,
@@ -29,7 +28,6 @@ router.get("/properties", viewAllProperties);
 router.get("/properties/:propertyId", viewPropertyDetails);
 router.put("/properties/:propertyId", updateProperty);
 
-router.get("/coins/:userId", adminGetBalance);
 router.put("/coins/:userId", adminUpdateBalance);
 router.get("/transactions/:userId", adminGetTransactions);
 

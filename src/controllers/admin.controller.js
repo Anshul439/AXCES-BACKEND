@@ -182,25 +182,6 @@ export const updateProperty = async (req, res, next) => {
 
 
 
-
-// Get a user's coin balance as admin
-export const adminGetBalance = async (req, res, next) => {
-  try {
-    const { userId } = req.params; // Admin provides the user ID
-
-    const coins = await Coins.findOne({ userId });
-
-    if (!coins) {
-      return res.status(404).json({ code: 404, data: {}, message: "Coins not found for this user." });
-    }
-
-    res.status(200).json({ code: 200, data: { coins: coins.balance }, message: "Coins fetched successfully." });
-  } catch (error) {
-    console.error("Error fetching balance:", error);
-    next(error);
-  }
-};
-
 // Update a user's coin balance as admin
 export const adminUpdateBalance = async (req, res, next) => {
   const { userId } = req.params; // Admin provides the user ID
