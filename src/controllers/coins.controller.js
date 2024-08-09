@@ -22,6 +22,8 @@ export const getBalance = async (req, res,next) => {
   }
 };
 
+
+
 // Recharge user's coins
 export const rechargeCoins = async (req, res, next) => {
   const { amount } = req.body;
@@ -36,15 +38,18 @@ export const rechargeCoins = async (req, res, next) => {
       coins = new Coins({ userId, balance: 0 }); // Initialize with balance 0 or any default value
     }
 
-    // Update balance and save
+    // Update balance and add transaction
     coins.balance += amount;
+    coins.transactions.push({
+      amount: amount,
+      timestamp: new Date(),
+    });
+
     await coins.save();
 
-    res
-      .status(200)
-      .json({ code: 200, data:{balance: coins.balance}, message: "Coins recharged successfully." });
+    res.status(200).json({ code: 200, data: { balance: coins.balance }, message: "Coins recharged successfully." });
   } catch (error) {
     console.error("Error recharging coins:", error);
-    next(error)
+    next(error);
   }
 };

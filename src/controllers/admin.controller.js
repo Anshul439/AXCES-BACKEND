@@ -1,5 +1,4 @@
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import Admin from '../models/admin.model.js';
 import User from '../models/user.model.js';
 import Property from '../models/property.model.js';
@@ -7,8 +6,16 @@ import { errorHandler } from '../utils/error.js';
 import Coins from "../models/coins.model.js";
 
 
+const HARD_CODED_SECRET_TOKEN = 'ADMIN'; // Replace with your actual token
+
+// Create Admin
 export const createAdmin = async (req, res) => {
-  const { username, password, email } = req.body;
+  const { username, password, email, token } = req.body;
+
+  // Verify token
+  if (token !== HARD_CODED_SECRET_TOKEN) {
+    return res.status(403).json({ message: 'Invalid token' });
+  }
 
   try {
     const existingAdmin = await Admin.findOne({ username });
@@ -29,7 +36,7 @@ export const createAdmin = async (req, res) => {
     // Save the admin document
     await admin.save();
 
-    res.status(201).json({ message: 'Admin created successfully' });
+    res.status(201).json({ code: 200, data: {username, email}, message: 'Admin created successfully' });
   } catch (error) {
     console.error('Error creating admin:', error);
     res.status(500).json({ message: 'Something went wrong' });
@@ -37,32 +44,37 @@ export const createAdmin = async (req, res) => {
 };
 
 
+
 // Admin Sign-in
-export const signinAdmin = async (req, res, next) => {
-  const { username, password } = req.body;
+export const signinAdmin = async (req, res) => {
+  const { username, password, token } = req.body;
+
+  // Verify token
+  if (token !== HARD_CODED_SECRET_TOKEN) {
+    return res.status(403).json({ message: 'Invalid token' });
+  }
 
   try {
     const admin = await Admin.findOne({ username });
     if (!admin) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
+    console.log(admin);
 
     const isMatch = await bcrypt.compare(password, admin.password);
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    const token = jwt.sign({ isAdmin: true }, process.env.JWT_SECRET);
 
-    // Update last login time
-    admin.last_login = new Date();
-    await admin.save();
-
-    res.status(200).json({ token });
+    // Return a simple success message or a custom token for session management
+    res.status(200).json({code: 200, data: {username, email: admin.email}, message: 'Sign-in successful' });
   } catch (error) {
-    next(error)
+    console.error('Error signing in admin:', error);
+    res.status(500).json({ message: 'Something went wrong' });
   }
 };
+
 
 
 
@@ -205,27 +217,44 @@ export const adminUpdateBalance = async (req, res, next) => {
 };
 
 
-// Admin get user's transactions for the last month
+
+
+// Utility function to parse date in DD/MM/YYYY format
+const parseDate = (dateStr) => {
+  const [day, month, year] = dateStr.split('/').map(Number);
+  return new Date(year, month - 1, day);
+};
+
 export const adminGetTransactions = async (req, res, next) => {
   const { userId } = req.params;
+  const { startDate, endDate } = req.body;
 
   try {
-    const end = new Date();
-    const start = new Date();
-    start.setMonth(start.getMonth() - 1); // Set the start date to one month ago
+    // Parse startDate and endDate
+    const start = parseDate(startDate);
+    start.setHours(0, 0, 0, 0); // Set start time to 12:00 AM
 
+    const end = parseDate(endDate);
+    end.setHours(23, 59, 59, 999); // Set end time to 11:59 PM
+
+    console.log(`Fetching transactions from ${start} to ${end}`);
+
+    // Fetch the coins document
     const coins = await Coins.findOne({ userId });
 
     if (!coins) {
       return res.status(404).json({ code: 404, data: {}, message: "Coins not found for this user." });
     }
 
-    const transactions = coins.transactions.filter(transaction => 
-      transaction.timestamp >= start && transaction.timestamp <= end
+    // Filter transactions within the specified date range
+    const transactions = coins.transactions.filter(transaction =>
+      new Date(transaction.timestamp) >= start && new Date(transaction.timestamp) <= end
     );
 
+    console.log('Filtered Transactions:', transactions);
+
     if (!transactions.length) {
-      return res.status(404).json({ code: 404, data: {}, message: "No transactions found for this user in the last month." });
+      return res.status(404).json({ code: 404, data: {}, message: "No transactions found for this user in the specified period." });
     }
 
     res.status(200).json({ code: 200, data: { transactions }, message: "Transactions fetched successfully." });
@@ -234,6 +263,7 @@ export const adminGetTransactions = async (req, res, next) => {
     next(error);
   }
 };
+
 
 
 
