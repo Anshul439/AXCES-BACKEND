@@ -1,80 +1,49 @@
-import bcrypt from 'bcryptjs';
 import Admin from '../models/admin.model.js';
 import User from '../models/user.model.js';
 import Property from '../models/property.model.js';
 import { errorHandler } from '../utils/error.js';
 import Coins from "../models/coins.model.js";
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 
-const HARD_CODED_SECRET_TOKEN = 'ADMIN'; // Replace with your actual token
+const HARD_CODED_SECRET_TOKEN = 'ADMIN'; // Hard-coded token for verification
 
-// Create Admin
-export const createAdmin = async (req, res) => {
-  const { username, password, email, token } = req.body;
-
-  // Verify token
-  if (token !== HARD_CODED_SECRET_TOKEN) {
-    return res.status(403).json({ message: 'Invalid token' });
-  }
-
-  try {
-    const existingAdmin = await Admin.findOne({ username });
-    if (existingAdmin) {
-      return res.status(400).json({ message: 'Admin already exists' });
-    }
-
-    // Hash the password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Create admin document
-    const admin = new Admin({
-      username,
-      password: hashedPassword,
-      email,
-    });
-
-    // Save the admin document
-    await admin.save();
-
-    res.status(201).json({ code: 200, data: {username, email}, message: 'Admin created successfully' });
-  } catch (error) {
-    console.error('Error creating admin:', error);
-    res.status(500).json({ message: 'Something went wrong' });
-  }
-};
-
-
-
-// Admin Sign-in
+// Admin Sign-In Function
 export const signinAdmin = async (req, res) => {
-  const { username, password, token } = req.body;
+  const { token, username, password } = req.body;
 
-  // Verify token
+  // Verify the hard-coded token
   if (token !== HARD_CODED_SECRET_TOKEN) {
-    return res.status(403).json({ message: 'Invalid token' });
+    return res.status(403).json({ message: 'Invalid hard-coded token' });
   }
 
   try {
+    // Check if admin exists
     const admin = await Admin.findOne({ username });
     if (!admin) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
-    console.log(admin);
-
-    const isMatch = await bcrypt.compare(password, admin.password);
-    if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(404).json({ message: 'Admin not found' });
     }
 
+    // Compare password
+    const isPasswordValid = await bcrypt.compare(password, admin.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
 
-    // Return a simple success message or a custom token for session management
-    res.status(200).json({code: 200, data: {username, email: admin.email}, message: 'Sign-in successful' });
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: admin._id, username: admin.username, email: admin.email },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' } // Set token expiration time as needed
+    );
+
+    // Send token back in the response
+    res.status(200).json({ message: 'Sign in successful', token });
   } catch (error) {
-    console.error('Error signing in admin:', error);
-    res.status(500).json({ message: 'Something went wrong' });
+    res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 };
-
 
 
 

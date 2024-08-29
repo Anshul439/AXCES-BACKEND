@@ -1,15 +1,28 @@
 import express from 'express';
 import bodyParser from 'body-parser';
+import cors from 'cors';
 import connectDB from './config/db.js';
 import userRoutes from './routes/user.route.js';
 import propertyRoutes from './routes/property.route.js';
 import coinsRoutes from './routes/coins.route.js';
 import adminRoutes from './routes/admin.route.js';
 import autoSuggestRoutes from './routes/autosuggestion.js';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const app = express();
-import dotenv from 'dotenv';
-dotenv.config();
+
+// CORS configuration
+const corsOptions = {
+  origin: 'https://axces.in',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  optionsSuccessStatus: 204
+};
+
+app.use(cors(corsOptions));
 
 app.use(bodyParser.json());
 

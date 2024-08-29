@@ -8,29 +8,26 @@ import {
   updateUser,
   viewAllProperties,
   viewPropertyDetails,
-  createAdmin,
   signinAdmin,
   updateDefaultCoinValues
 } from "../controllers/admin.controller.js";
-import { adminMiddleware } from "../middlewares/verifyAdmin.middleware.js";
-import { authenticateToken } from "../middlewares/verifyUser.js";
+import { verifyAdminToken } from "../middlewares/verifyAdmin.middleware.js";
 
 const router = express.Router();
 
-router.post("/createAdmin", createAdmin);
-router.post("/signinAdmin", signinAdmin);
+router.post("/signinAdmin", verifyAdminToken, signinAdmin);
 
-router.get("/users", authenticateToken, getAllUsers);
-router.get("/users/:userId", getUserDetails);
-router.put("/users/:userId", updateUser);
+router.get("/users", verifyAdminToken, getAllUsers);
+router.get("/users/:userId", verifyAdminToken, getUserDetails);
+router.put("/users/:userId",verifyAdminToken, updateUser);
 
-router.get("/properties", viewAllProperties);
-router.get("/properties/:propertyId", viewPropertyDetails);
-router.put("/properties/:propertyId", updateProperty);
+router.get("/properties", verifyAdminToken,viewAllProperties);
+router.get("/properties/:propertyId",verifyAdminToken, viewPropertyDetails);
+router.put("/properties/:propertyId",verifyAdminToken, updateProperty);
 
-router.put("/coins/:userId", adminUpdateBalance);
-router.get("/transactions/:userId", adminGetTransactions);
+router.put("/coins/:userId",verifyAdminToken, adminUpdateBalance);
+router.get("/transactions/:userId",verifyAdminToken, adminGetTransactions);
 
-router.patch("/coins/default", updateDefaultCoinValues);
+router.patch("/coins/default",verifyAdminToken, updateDefaultCoinValues);
 
 export default router;
